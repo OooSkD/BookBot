@@ -25,16 +25,21 @@ public class BookService {
         return bookRepository.save(book);
     }
 
-    public Book updateBook(Long id, Book bookDetails) {
-        Optional<Book> book = bookRepository.findById(id);
-        if (book.isPresent()) {
-            Book existingBook = book.get();
-            existingBook.setTitle(bookDetails.getTitle());
-            existingBook.setAuthor(bookDetails.getAuthor());
-            existingBook.setStatus(bookDetails.getStatus());
-            return bookRepository.save(existingBook);
-        }
-        return null;  // или выбрасывать исключение, если книга не найдена
+    public Book updateBook(Long id, Book book) {
+        // Проверяем, существует ли книга с таким id
+        Book existingBook = bookRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Book not found with id " + id));
+
+        // Обновляем поля книги
+        existingBook.setTitle(book.getTitle());
+        existingBook.setAuthor(book.getAuthor());
+        existingBook.setStatus(book.getStatus());
+        existingBook.setUser(book.getUser());
+        existingBook.setRating(book.getRating());
+        existingBook.setCurrentPage(book.getCurrentPage());
+
+        // Сохраняем обновлённую книгу в базе данных
+        return bookRepository.save(existingBook);
     }
 
     public void deleteBook(Long id) {
