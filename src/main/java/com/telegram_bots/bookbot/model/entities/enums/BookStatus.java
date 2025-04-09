@@ -1,4 +1,4 @@
-package com.telegram_bots.bookbot.entities.enums;
+package com.telegram_bots.bookbot.model.entities.enums;
 
 public enum BookStatus {
     PLANNED("Запланировано"),

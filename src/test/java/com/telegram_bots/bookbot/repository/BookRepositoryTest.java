@@ -1,8 +1,8 @@
 package com.telegram_bots.bookbot.repository;
 
-import com.telegram_bots.bookbot.entities.Book;
-import com.telegram_bots.bookbot.entities.User;
-import com.telegram_bots.bookbot.entities.enums.BookStatus;
+import com.telegram_bots.bookbot.model.entities.Book;
+import com.telegram_bots.bookbot.model.entities.User;
+import com.telegram_bots.bookbot.model.entities.enums.BookStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;

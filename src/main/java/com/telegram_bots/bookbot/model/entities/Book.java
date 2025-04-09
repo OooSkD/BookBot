@@ -1,6 +1,6 @@
-package com.telegram_bots.bookbot.entities;
+package com.telegram_bots.bookbot.model.entities;
 
-import com.telegram_bots.bookbot.entities.enums.BookStatus;
+import com.telegram_bots.bookbot.model.entities.enums.BookStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 

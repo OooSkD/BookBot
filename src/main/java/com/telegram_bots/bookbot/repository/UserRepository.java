@@ -1,6 +1,6 @@
 package com.telegram_bots.bookbot.repository;
 
-import com.telegram_bots.bookbot.entities.User;
+import com.telegram_bots.bookbot.model.entities.User;
 import org.springframework.data.repository.CrudRepository;
 
 import java.util.Optional;

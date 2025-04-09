@@ -1,6 +1,6 @@
 package com.telegram_bots.bookbot.controller;
 
-import com.telegram_bots.bookbot.entities.Book;
+import com.telegram_bots.bookbot.model.entities.Book;
 import com.telegram_bots.bookbot.service.BookService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

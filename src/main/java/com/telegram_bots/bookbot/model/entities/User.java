@@ -1,4 +1,4 @@
-package com.telegram_bots.bookbot.entities;
+package com.telegram_bots.bookbot.model.entities;
 
 import jakarta.persistence.*;
 import lombok.Data;
