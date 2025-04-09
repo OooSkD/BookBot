@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-//TODO: организовать проверку книги на валидность
 @Service
 public class LitresService {
 

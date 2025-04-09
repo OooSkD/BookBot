@@ -2,6 +2,7 @@ package com.telegram_bots.bookbot.bot;
 
 import com.telegram_bots.bookbot.model.dto.LitresBookDto;
 import com.telegram_bots.bookbot.model.entities.Book;
+import com.telegram_bots.bookbot.model.entities.User;
 import com.telegram_bots.bookbot.service.BookService;
 import com.telegram_bots.bookbot.service.UserStateService;
 import com.telegram_bots.bookbot.service.LitresService;
@@ -14,8 +15,11 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 //TODO разбить на классы и методы разбить
 @Component
@@ -27,6 +31,11 @@ public class MyTelegramBot extends TelegramLongPollingBot {
     @Value("${bot.token}")
     private String botToken;
 
+    @Value("${book.title.maxLength}")
+    private int maxLengthTitle;
+
+    @Value("${book.searchResult.maxCount}")
+    private int maxCountBooks;
     private final BookService bookService;
     private final UserStateService userStateService;
     private final LitresService litresService;
@@ -69,11 +78,11 @@ public class MyTelegramBot extends TelegramLongPollingBot {
     }
 
     private void sendBookList(Long userId) {
-        List<Book> books = bookService.getAllBooks();
+        List<Book> books = bookService.getAllBooksOfUser(userId);
         StringBuilder bookListText = new StringBuilder("Список книг:\n");
 
         for (Book book : books) {
-            bookListText.append(book.getTitle()).append("\n");
+            bookListText.append(book.getTitle() + " - " + book.getAuthor() + " - " + book.getStatus().getDisplayNameRu()).append("\n");
         }
 
         SendMessage message = new SendMessage();
@@ -119,8 +128,8 @@ public class MyTelegramBot extends TelegramLongPollingBot {
         if (update.hasCallbackQuery()) {
             String callbackData = update.getCallbackQuery().getData();
             Long userId = update.getCallbackQuery().getFrom().getId();
-
-            switch (callbackData) {
+            String command = callbackData.contains(":") ? callbackData.substring(0, callbackData.indexOf(":")) : callbackData;
+            switch (command) {
                 case "add_book":
                     userStateService.setWaitingForBookTitle(userId, true); // Запоминаем, что ждём название
                     requestBookTitle(userId);
@@ -134,9 +143,14 @@ public class MyTelegramBot extends TelegramLongPollingBot {
                     break;
                 case "select_book":
                     String data = callbackData.substring("select_book:".length());
+                    //String[] parts = data.split("\\|");
+                    //String title = parts[0];
+                    //String author = parts.length > 1 ? parts[1] : "";
+                    //TODO: переделать. нужно доставать из кэша
                     String[] parts = data.split("\\|");
-                    String title = parts[0];
-                    String author = parts.length > 1 ? parts[1] : "";
+                    List<LitresBookDto> foundBooks = litresService.searchBooks(parts[0]);
+                    String title = foundBooks.get(parts[1].charAt(0) - '0').getTitle();
+                    String author = foundBooks.get(parts[1].charAt(0) - '0').getAuthor();
 
                     // сохраняем в базу
                     bookService.addBook(userId, title, author);
@@ -195,14 +209,22 @@ public class MyTelegramBot extends TelegramLongPollingBot {
         message.setText("Вот что удалось найти:");
 
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-
-        for (LitresBookDto book : foundBooks) {
-            String bookText = "📖 " + book.getTitle() + "\n✍️ " + book.getAuthor();
+        int n = Math.min(foundBooks.size(), maxCountBooks);
+        for (int i = 0; i < n; i++) {
+            String currentBookAuthor = foundBooks.get(i).getAuthor();
+            String currentBookTitle = foundBooks.get(i).getTitle();
+            if (currentBookTitle.length() > maxLengthTitle) {
+                foundBooks.get(i).setTitle(currentBookTitle.substring(0, maxLengthTitle));
+            }
+            String bookText = "📖 " + currentBookTitle + "\n✍️ " + currentBookAuthor;
             SendMessage bookMessage = new SendMessage(chatId.toString(), bookText);
 
             InlineKeyboardButton selectButton = new InlineKeyboardButton();
             selectButton.setText("✅ Выбрать");
-            selectButton.setCallbackData("select_book:" + book.getTitle() + "|" + book.getAuthor());
+            //TODO: это плохо вариант, но мне нужно протестить добавление книги перед рефакторингом этого класса
+            //TODO: сделать кэш, где будет храниться выбранная книга,
+            // пока без redis, поэтому нужно будет обработать вариант, когда книги не будет в кэше, а мы ее там ожидаем
+            selectButton.setCallbackData("select_book:" + bookTitle + "|" + i);
 
             List<InlineKeyboardButton> row = new ArrayList<>();
             row.add(selectButton);

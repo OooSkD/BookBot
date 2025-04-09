@@ -2,12 +2,14 @@ package com.telegram_bots.bookbot.service;
 
 import com.telegram_bots.bookbot.model.entities.Book;
 import com.telegram_bots.bookbot.model.entities.User;
+import com.telegram_bots.bookbot.model.entities.enums.BookStatus;
 import com.telegram_bots.bookbot.repository.BookRepository;
 import com.telegram_bots.bookbot.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +27,16 @@ public class BookService {
 
     public List<Book> getAllBooks() {
         return bookRepository.findAll();
+    }
+
+    public List<Book> getAllBooksOfUser(Long telegramId) {
+        Optional<User> optionalUser = userRepository.findByTelegramId(telegramId);
+        User user;
+
+        if (optionalUser.isPresent()) {
+            return bookRepository.findByUser(optionalUser.get());
+        }
+        return new ArrayList<>();
     }
 
     public Optional<Book> getBookById(Long id) {
@@ -58,6 +70,7 @@ public class BookService {
         book.setTitle(title);
         book.setAuthor(author);
         book.setUser(user);
+        book.setStatus(BookStatus.PLANNED);
         book.setAddedDate(LocalDate.now());
 
         return bookRepository.save(book);
