@@ -1,4 +1,4 @@
-package com.telegram_bots.bookbot.service;
+package com.telegram_bots.bookbot.bot.service;
 
 import org.springframework.stereotype.Service;
 
