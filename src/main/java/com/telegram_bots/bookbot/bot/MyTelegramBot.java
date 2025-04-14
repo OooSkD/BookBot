@@ -6,9 +6,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.util.List;
 
 
 @Slf4j
@@ -39,19 +41,37 @@ public class MyTelegramBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        SendMessage response = null;
-
+        List<SendMessage> messagesToSend = null;
+        DeleteMessage messageToDelete = null;
         if (update.hasMessage() && update.getMessage().hasText()) {
-            response = botResponseService.handleTextMessage(update);
+            messagesToSend = botResponseService.handleTextMessage(update);
         } else if (update.hasCallbackQuery()) {
-            response = botResponseService.handleCallbackQuery(update);
+            messagesToSend = botResponseService.handleCallbackQuery(update);
+            messageToDelete = botResponseService.handleDeleteMessage(update);
         }
 
-        if (response != null) {
+        sendMessages(messagesToSend);
+        deleteMessage(messageToDelete);
+    }
+
+    private void sendMessages(List<SendMessage> messages) {
+        if (messages != null && !messages.isEmpty()) {
             try {
-                execute(response);
+                for (SendMessage msg : messages) {
+                    execute(msg);
+                }
             } catch (TelegramApiException e) {
                 log.error("Ошибка при отправке сообщения: ", e);
+            }
+        }
+    }
+
+    private void deleteMessage(DeleteMessage message) {
+        if (message != null) {
+            try {
+                execute(message);
+            } catch (TelegramApiException e) {
+                log.error("Ошибка при удалении сообщения: ", e);
             }
         }
     }

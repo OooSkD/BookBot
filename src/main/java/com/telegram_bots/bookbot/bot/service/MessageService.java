@@ -48,7 +48,7 @@ public class MessageService {
     public SendMessage buildRequestBookTitleMessage(String chatId) {
         return SendMessage.builder()
                 .chatId(chatId)
-                .text("Введите название книги:")
+                .text("Введите название книги или автора:")
                 .build();
     }
 
@@ -70,7 +70,7 @@ public class MessageService {
         for (int i = 0; i < books.size(); i++) {
             LitresBookDto book = books.get(i);
             String text = book.getTitle() + " - " + book.getAuthor();
-            String callback = "select_book:" + book.getTitle() + "|" + i;
+            String callback = "select_book:" + i;
 
             InlineKeyboardButton button = InlineKeyboardButton.builder()
                     .text(text)

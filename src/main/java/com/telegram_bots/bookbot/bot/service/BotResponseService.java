@@ -7,6 +7,7 @@ import com.telegram_bots.bookbot.service.LitresService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.List;
@@ -30,47 +31,64 @@ public class BotResponseService {
         this.bookService = bookService;
     }
 
-    public SendMessage handleTextMessage(Update update) {
+    public List<SendMessage> handleTextMessage(Update update) {
         Long chatId = update.getMessage().getChatId();
         String messageText = update.getMessage().getText();
 
         if ("/start".equals(messageText)) {
-            return messageService.buildWelcomeMessage(chatId);
+            return List.of(messageService.buildWelcomeMessage(chatId));
         }
 
         if (userStateService.isWaitingForBookTitle(chatId)) {
             userStateService.setWaitingForBookTitle(chatId, false);
             List<LitresBookDto> books = litresService.searchBooks(messageText);
             books = books.stream().limit(maxCountBooks).collect(Collectors.toList());
-            return messageService.buildBookSearchResults(chatId, books);
+            userStateService.saveSearchResults(chatId, books);
+            return List.of(messageService.buildBookSearchResults(chatId, books));
         }
 
-        return messageService.buildUnknownCommandMessage(chatId);
+        return List.of( messageService.buildUnknownCommandMessage(chatId));
     }
 
-    public SendMessage handleCallbackQuery(Update update) {
+    public List<SendMessage> handleCallbackQuery(Update update) {
         Long chatId = update.getCallbackQuery().getMessage().getChatId();
         String data = update.getCallbackQuery().getData();
         String command = data.contains(":") ? data.split(":")[0] : data;
 
         switch (command) {
-            case "add_book":
+            case "add_book" -> {
                 userStateService.setWaitingForBookTitle(chatId, true);
-                return messageService.buildRequestBookTitleMessage(chatId);
-
-            case "cancel":
+                return List.of(messageService.buildRequestBookTitleMessage(chatId));
+            }
+            case "cancel" -> {
+                //TODO: вынести в отдельны метод и поменять название command чтобы это кнопка отвечала только за отмену поиска книг
+                // и вывести стартовую страницу после отмены
                 userStateService.setWaitingForBookTitle(chatId, false);
-                return messageService.buildCancelledMessage(chatId);
-
-            case "show_books":
-                return buildBookListMessage(chatId);
-
-            case "select_book":
+                userStateService.clearSearchResults(chatId);
+                return List.of(messageService.buildCancelledMessage(chatId));
+            }
+            case "show_books" -> {
+                return List.of(buildBookListMessage(chatId));
+            }
+            case "select_book" -> {
                 return handleBookSelection(chatId, data);
-
-            default:
-                return messageService.buildUnknownCallbackMessage(chatId);
+            }
+            default -> {
+                return List.of(messageService.buildUnknownCallbackMessage(chatId));
+            }
         }
+    }
+
+    public DeleteMessage handleDeleteMessage(Update update) {
+        Long chatId = update.getCallbackQuery().getMessage().getChatId();
+        Integer messageId = update.getCallbackQuery().getMessage().getMessageId();
+        String data = update.getCallbackQuery().getData();
+
+        if (data.contains("select_book") || data.equals("cancel")) {
+            return new DeleteMessage(chatId.toString(), messageId);
+        }
+
+        return null;
     }
 
     private SendMessage buildBookListMessage(Long chatId) {
@@ -78,25 +96,23 @@ public class BotResponseService {
         return messageService.buildBookListMessage(chatId, books);
     }
 
-    private SendMessage handleBookSelection(Long chatId, String data) {
-        //TODO: переделать. нужно доставать из кэша
-        //Пример: select_book:название|0
-        String info = data.substring("select_book:".length());
-        String[] parts = info.split("\\|");
+    private List<SendMessage> handleBookSelection(Long chatId, String data) {
+        int index = Integer.parseInt(data.substring("select_book:".length()));
+        List<LitresBookDto> books = userStateService.getSearchResults(chatId);
 
-        String searchTitle = parts[0];
-        int index = Integer.parseInt(parts[1]);
-
-        List<LitresBookDto> foundBooks = litresService.searchBooks(searchTitle);
-
-        if (index >= foundBooks.size()) {
-            return messageService.buildBookNotFoundByIndexMessage(chatId);
+        if (index >= books.size()) {
+            return List.of(messageService.buildBookNotFoundByIndexMessage(chatId));
         }
 
-        LitresBookDto selectedBook = foundBooks.get(index);
+        LitresBookDto selectedBook = books.get(index);
         bookService.addBook(chatId, selectedBook.getTitle(), selectedBook.getAuthor());
+        userStateService.clearSearchResults(chatId);
 
-        return messageService.buildBookAddedMessage(chatId, selectedBook.getTitle());
+        SendMessage addedMessage = messageService.buildBookAddedMessage(chatId, selectedBook.getTitle());
+        SendMessage listMessage = buildBookListMessage(chatId);
+
+        return List.of(addedMessage, listMessage);
+
     }
 }
 
