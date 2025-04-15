@@ -2,6 +2,8 @@ package com.telegram_bots.bookbot.bot.service;
 
 
 import com.telegram_bots.bookbot.model.dto.LitresBookDto;
+import com.telegram_bots.bookbot.model.entities.enums.BookStatus;
+import com.telegram_bots.bookbot.utils.ButtonUtils;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -9,6 +11,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import com.telegram_bots.bookbot.model.entities.Book;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class MessageService {
@@ -20,17 +23,8 @@ public class MessageService {
     public SendMessage buildWelcomeMessage(String chatId) {
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         List<InlineKeyboardButton> row = new ArrayList<>();
-
-        row.add(InlineKeyboardButton.builder()
-                .text("Посмотреть мои книги")
-                .callbackData("show_books")
-                .build());
-
-        row.add(InlineKeyboardButton.builder()
-                .text("Добавить книгу")
-                .callbackData("add_book")
-                .build());
-
+        row.add(ButtonUtils.createButton("Посмотреть мои книги", "show_books"));
+        row.add(ButtonUtils.createButton("Добавить книгу", "add_book"));
         markup.setKeyboard(List.of(row));
 
         return SendMessage.builder()
@@ -58,6 +52,7 @@ public class MessageService {
     }
 
     public SendMessage buildBookSearchResults(String chatId, List<LitresBookDto> books) {
+        // TODO: не работает повторный ввод названия
         if (books.isEmpty()) {
             return SendMessage.builder()
                     .chatId(chatId)
@@ -71,22 +66,10 @@ public class MessageService {
             LitresBookDto book = books.get(i);
             String text = book.getTitle() + " - " + book.getAuthor();
             String callback = "select_book:" + i;
-
-            InlineKeyboardButton button = InlineKeyboardButton.builder()
-                    .text(text)
-                    .callbackData(callback)
-                    .build();
-
-            rows.add(List.of(button));
+            rows.add(List.of(ButtonUtils.createButton(text, callback)));
         }
 
-        // Добавляем кнопку отмены
-        rows.add(List.of(
-                InlineKeyboardButton.builder()
-                        .text("❌ Отмена")
-                        .callbackData("cancel")
-                        .build()
-        ));
+        rows.add(List.of(ButtonUtils.createButton("❌ Отмена", "cancel")));
 
         InlineKeyboardMarkup markup = InlineKeyboardMarkup.builder().keyboard(rows).build();
 
@@ -130,33 +113,6 @@ public class MessageService {
                 .build();
     }
 
-    public SendMessage buildBookListMessage(Long chatId, List<Book> books) {
-        return buildBookListMessage(String.valueOf(chatId), books);
-    }
-
-    public SendMessage buildBookListMessage(String chatId, List<Book> books) {
-        StringBuilder bookListText = new StringBuilder("Список книг:\n");
-        for (Book book : books) {
-            bookListText.append(book.getTitle())
-                    .append(" - ")
-                    .append(book.getAuthor())
-                    .append(" - ")
-                    .append(book.getStatus().getDisplayNameRu())
-                    .append("\n");
-        }
-
-        InlineKeyboardButton addButton = new InlineKeyboardButton("Добавить книгу");
-        addButton.setCallbackData("add_book");
-        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        markup.setKeyboard(List.of(List.of(addButton)));
-
-        return SendMessage.builder()
-                .chatId(chatId)
-                .text(bookListText.toString())
-                .replyMarkup(markup)
-                .build();
-    }
-
     public SendMessage buildBookAddedMessage(Long chatId, String title) {
         return buildBookAddedMessage(String.valueOf(chatId), title);
     }
@@ -177,5 +133,54 @@ public class MessageService {
                 .chatId(chatId)
                 .text("Не удалось найти книгу по выбранному индексу.")
                 .build();
+    }
+
+    public String buildBooksText(List<Book> books, BookStatus filter) {
+        StringBuilder text = new StringBuilder("📚 *Список книг*");
+        if (filter != null) {
+            text.append(" (").append(filter.getDisplayNameRu()).append(")");
+        }
+        text.append(":\n\n");
+
+        if (books.isEmpty()) {
+            text.append("Нет книг для отображения.");
+        } else {
+            for (Book book : books) {
+                text.append(book.getTitle())
+                        .append(" - ")
+                        .append(book.getAuthor())
+                        .append(" - ")
+                        .append(book.getStatus().getDisplayNameRu())
+                        .append("\n");
+            }
+        }
+
+        return text.toString();
+    }
+
+    public List<List<InlineKeyboardButton>> buildBookButtons(List<Book> books) {
+        return books.stream()
+                .map(book ->
+                        List.of(ButtonUtils.createButton(book.getTitle(), "manage_book:" + book.getId())))
+                .collect(Collectors.toList());
+    }
+
+    public List<InlineKeyboardButton> buildPaginationButtons(int currentPage, int totalBooks, int pageSize) {
+        List<InlineKeyboardButton> buttons = new ArrayList<>();
+
+        if (currentPage > 0) {
+            buttons.add(ButtonUtils.createButton("⬅️ Назад", "books_prev_page"));
+        }
+        if ((currentPage + 1) * pageSize < totalBooks) {
+            buttons.add(ButtonUtils.createButton("Вперёд ➡️", "books_next_page"));
+        }
+        return buttons;
+    }
+
+    public List<List<InlineKeyboardButton>> buildFilterAndAddButtons() {
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        rows.add(List.of(ButtonUtils.createButton("📂 Изменить фильтр", "change_filter")));
+        rows.add(List.of(ButtonUtils.createButton("➕ Добавить книгу", "add_book")));
+        return rows;
     }
 }
