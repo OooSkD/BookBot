@@ -1,9 +1,9 @@
 package com.telegram_bots.bookbot.bot.service;
 
-
 import com.telegram_bots.bookbot.model.dto.LitresBookDto;
 import com.telegram_bots.bookbot.model.entities.enums.BookStatus;
 import com.telegram_bots.bookbot.utils.ButtonUtils;
+import com.telegram_bots.bookbot.utils.WelcomeMessageProvider;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -15,6 +15,12 @@ import java.util.stream.Collectors;
 
 @Service
 public class MessageService {
+
+    private final WelcomeMessageProvider welcomeMessageProvider;
+
+    public MessageService(WelcomeMessageProvider welcomeMessageProvider) {
+        this.welcomeMessageProvider = welcomeMessageProvider;
+    }
 
     public SendMessage buildWelcomeMessage(Long chatId) {
         return buildWelcomeMessage(String.valueOf(chatId));
@@ -29,7 +35,7 @@ public class MessageService {
 
         return SendMessage.builder()
                 .chatId(chatId)
-                .text("Привет! Я бот для отслеживания книг 📚")
+                .text(welcomeMessageProvider.getRandomMessage())
                 .replyMarkup(markup)
                 .build();
     }
