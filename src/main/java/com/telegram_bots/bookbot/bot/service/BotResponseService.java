@@ -44,9 +44,12 @@ public class BotResponseService {
         }
 
         if (userStateService.isWaitingForBookTitle(chatId)) {
-            userStateService.setWaitingForBookTitle(chatId, false);
             List<LitresBookDto> books = litresService.searchBooks(messageText);
             books = books.stream().limit(maxCountBooks).collect(Collectors.toList());
+            if (books.isEmpty()) {
+                return List.of(messageService.buildNoBooksFoundMessage(chatId));
+            }
+            userStateService.setWaitingForBookTitle(chatId, false);
             userStateService.saveSearchResults(chatId, books);
             return List.of(messageService.buildBookSearchResults(chatId, books));
         }
@@ -64,9 +67,7 @@ public class BotResponseService {
                 userStateService.setWaitingForBookTitle(chatId, true);
                 return List.of(messageService.buildRequestBookTitleMessage(chatId));
             }
-            case "cancel" -> {
-                //TODO: вынести в отдельны метод и поменять название command чтобы это кнопка отвечала только за отмену поиска книг
-                // и вывести стартовую страницу после отмены
+            case "cancel_added_book" -> {
                 userStateService.setWaitingForBookTitle(chatId, false);
                 userStateService.clearSearchResults(chatId);
                 return List.of(messageService.buildCancelledMessage(chatId));
@@ -162,8 +163,7 @@ public class BotResponseService {
         String text = messageService.buildBooksText(booksOnPage, filter);
 
         // Сборка кнопок
-        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-        rows.addAll(messageService.buildBookButtons(booksOnPage));
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>(messageService.buildBookButtons(booksOnPage));
 
         List<InlineKeyboardButton> pagination = messageService.buildPaginationButtons(currentPage, filteredBooks.size(), pageSize);
         if (!pagination.isEmpty()) {

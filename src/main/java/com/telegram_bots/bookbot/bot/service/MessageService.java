@@ -58,14 +58,6 @@ public class MessageService {
     }
 
     public SendMessage buildBookSearchResults(String chatId, List<LitresBookDto> books) {
-        // TODO: не работает повторный ввод названия
-        if (books.isEmpty()) {
-            return SendMessage.builder()
-                    .chatId(chatId)
-                    .text("Ничего не нашлось 😢 Введите название ещё раз.")
-                    .build();
-        }
-
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
 
         for (int i = 0; i < books.size(); i++) {
@@ -75,7 +67,7 @@ public class MessageService {
             rows.add(List.of(ButtonUtils.createButton(text, callback)));
         }
 
-        rows.add(List.of(ButtonUtils.createButton("❌ Отмена", "cancel")));
+        rows.add(List.of(ButtonUtils.createButton("❌ Отмена", "cancel_added_book")));
 
         InlineKeyboardMarkup markup = InlineKeyboardMarkup.builder().keyboard(rows).build();
 
@@ -86,14 +78,37 @@ public class MessageService {
                 .build();
     }
 
+    public SendMessage buildNoBooksFoundMessage(Long chatId) {
+        return buildNoBooksFoundMessage(String.valueOf(chatId));
+    }
+
+    public SendMessage buildNoBooksFoundMessage(String chatId) {
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<InlineKeyboardButton> row = List.of(ButtonUtils.createButton("❌ Отмена", "cancel_added_book"));
+        markup.setKeyboard(List.of(row));
+
+        return SendMessage.builder()
+                .chatId(chatId)
+                .text("Ничего не нашлось 😢\nПопробуй ввести название ещё раз, может оно немного другое?")
+                .replyMarkup(markup)
+                .build();
+    }
+
     public SendMessage buildCancelledMessage(Long chatId) {
         return buildCancelledMessage(String.valueOf(chatId));
     }
 
     public SendMessage buildCancelledMessage(String chatId) {
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<InlineKeyboardButton> row = new ArrayList<>();
+        row.add(ButtonUtils.createButton("Посмотреть мои книги", "show_books"));
+        row.add(ButtonUtils.createButton("Добавить книгу", "add_book"));
+        markup.setKeyboard(List.of(row));
+
         return SendMessage.builder()
                 .chatId(chatId)
-                .text("Добавление книги отменено.")
+                .text("📖 Ничего страшного, книжка подождёт своего часа ☁️")
+                .replyMarkup(markup)
                 .build();
     }
 
