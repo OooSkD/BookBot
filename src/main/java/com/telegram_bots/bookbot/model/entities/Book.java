@@ -2,13 +2,19 @@ package com.telegram_bots.bookbot.model.entities;
 
 import com.telegram_bots.bookbot.model.entities.enums.BookStatus;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
 
 @Entity
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Book {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

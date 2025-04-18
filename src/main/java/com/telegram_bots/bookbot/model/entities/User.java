@@ -1,7 +1,10 @@
 package com.telegram_bots.bookbot.model.entities;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.sql.Timestamp;
 import java.util.UUID;
@@ -9,6 +12,9 @@ import java.util.UUID;
 @Entity
 @Data
 @Table(name = "users")
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class User {
     @Id
     @GeneratedValue

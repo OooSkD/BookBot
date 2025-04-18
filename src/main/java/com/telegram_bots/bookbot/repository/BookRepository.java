@@ -6,11 +6,9 @@ import org.springframework.data.repository.CrudRepository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 public interface BookRepository extends CrudRepository<Book, Long> {
     List<Book> findAll();
     Optional<Book> findByTitleAndUser(String title, User user);
     List<Book> findByUser(User user);
-
 }

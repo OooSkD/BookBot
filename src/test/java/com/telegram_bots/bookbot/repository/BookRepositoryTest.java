@@ -3,21 +3,25 @@ package com.telegram_bots.bookbot.repository;
 import com.telegram_bots.bookbot.model.entities.Book;
 import com.telegram_bots.bookbot.model.entities.User;
 import com.telegram_bots.bookbot.model.entities.enums.BookStatus;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.test.context.ActiveProfiles;
 
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-public class BookRepositoryTest {
-    @Autowired
-    private TestEntityManager entityManager;
+@ActiveProfiles("test")
+class BookRepositoryTest {
 
     @Autowired
     private BookRepository bookRepository;
@@ -25,33 +29,76 @@ public class BookRepositoryTest {
     @Autowired
     private UserRepository userRepository;
 
-    @Test
-    void testSaveBookWithUser() {
+    private User createAndSaveUser() {
         User user = new User();
-        user.setTelegramId(999L);
+        user.setTelegramId(123L);
         user.setUsername("reader");
-        entityManager.persist(user);
+        user.setFirstName("Book");
+        user.setLastName("Lover");
+        user.setModifiedAt(Timestamp.from(Instant.now()));
+        return userRepository.save(user);
+    }
 
-        Book book = new Book();
-        book.setTitle("Мастер и Маргарита");
-        book.setAuthor("Булгаков");
-        book.setStatus(BookStatus.READING);
-        book.setUser(user);
-        book.setRating(9);
-        book.setCurrentPage(100);
+    private Book createBook(String title, User user) {
+        return Book.builder()
+                .title(title)
+                .author("Author Name")
+                .status(BookStatus.READING)
+                .addedDate(LocalDate.now())
+                .startDate(LocalDate.now())
+                .finishDate(null)
+                .rating(null)
+                .currentPage(10)
+                .modifiedAt(Timestamp.from(Instant.now()))
+                .user(user)
+                .build();
+    }
 
-        entityManager.persistAndFlush(book);
+    @Test
+    @DisplayName("Сохранение и поиск книги по title и user")
+    void findByTitleAndUser() {
+        User user = createAndSaveUser();
+        Book book = createBook("Test Book", user);
+        bookRepository.save(book);
 
-        Optional<Book> found = bookRepository.findById(book.getId());
+        Optional<Book> found = bookRepository.findByTitleAndUser("Test Book", user);
+
         assertThat(found).isPresent();
-        assertThat(found.get().getId()).isNotNull();
-        assertThat(found.get().getTitle()).isEqualTo("Мастер и Маргарита");
-        assertThat(found.get().getAuthor()).isEqualTo("Булгаков");
-        assertThat(found.get().getStatus()).isEqualTo(BookStatus.READING);
+        assertThat(found.get().getAuthor()).isEqualTo("Author Name");
+    }
 
-        // Проверяем, что пользователь книги совпадает с сохранённым пользователем
-        assertThat(found.get().getUser().getId()).isEqualTo(user.getId());  // Здесь проверяем по id пользователя
-        assertThat(found.get().getRating()).isEqualTo(9);
-        assertThat(found.get().getCurrentPage()).isEqualTo(100);
+    @Test
+    @DisplayName("Поиск всех книг")
+    void findAllBooks() {
+        User user = createAndSaveUser();
+        bookRepository.save(createBook("Book 1", user));
+        bookRepository.save(createBook("Book 2", user));
+
+        List<Book> books = bookRepository.findAll();
+
+        assertThat(books).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("Поиск книг по пользователю")
+    void findByUser() {
+        User user1 = createAndSaveUser();
+        User user2 = userRepository.save(User.builder()
+                .telegramId(456L)
+                .username("otheruser")
+                .firstName("Other")
+                .lastName("User")
+                .modifiedAt(Timestamp.from(Instant.now()))
+                .build());
+
+        bookRepository.save(createBook("Book A", user1));
+        bookRepository.save(createBook("Book B", user1));
+        bookRepository.save(createBook("Book C", user2));
+
+        List<Book> user1Books = bookRepository.findByUser(user1);
+        List<Book> user2Books = bookRepository.findByUser(user2);
+
+        assertThat(user1Books).hasSize(2);
+        assertThat(user2Books).hasSize(1);
     }
 }
