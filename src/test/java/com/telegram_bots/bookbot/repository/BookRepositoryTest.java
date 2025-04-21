@@ -3,13 +3,14 @@ package com.telegram_bots.bookbot.repository;
 import com.telegram_bots.bookbot.model.entities.Book;
 import com.telegram_bots.bookbot.model.entities.User;
 import com.telegram_bots.bookbot.model.entities.enums.BookStatus;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -19,7 +20,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
 class BookRepositoryTest {
 
@@ -52,6 +52,12 @@ class BookRepositoryTest {
                 .modifiedAt(Timestamp.from(Instant.now()))
                 .user(user)
                 .build();
+    }
+
+    @BeforeEach
+    void setup() {
+        bookRepository.deleteAll();
+        userRepository.deleteAll();
     }
 
     @Test

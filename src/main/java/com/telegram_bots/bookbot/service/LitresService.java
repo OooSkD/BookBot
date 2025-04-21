@@ -16,12 +16,15 @@ import java.util.List;
 
 @Service
 public class LitresService {
+    public Document fetchDocument(String query) throws IOException {
+        String url = "https://www.litres.ru/pages/rmd_search/?q=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
+        return Jsoup.connect(url).get();
+    }
 
     public List<LitresBookDto> searchBooks(String query) {
         List<LitresBookDto> result = new ArrayList<>();
         try {
-            String url = "https://www.litres.ru/pages/rmd_search/?q=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
-            Document doc = Jsoup.connect(url).get();
+            Document doc = fetchDocument(query);
 
             Elements bookBlocks = doc.select(".art-item");
 

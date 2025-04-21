@@ -31,7 +31,7 @@ public class Book {
     private LocalDate finishDate; // Дата окончания чтения
     private Integer rating; // Оценка книги от пользователя
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user; // пользователь, который добавил эту книгу
 
