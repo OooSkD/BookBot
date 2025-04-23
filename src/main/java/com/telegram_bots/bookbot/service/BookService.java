@@ -31,7 +31,6 @@ public class BookService {
 
     public List<Book> getAllBooksOfUser(Long telegramId) {
         Optional<User> optionalUser = userRepository.findByTelegramId(telegramId);
-        User user;
 
         if (optionalUser.isPresent()) {
             return bookRepository.findByUser(optionalUser.get());
@@ -95,5 +94,19 @@ public class BookService {
 
     public void deleteBook(Long id) {
         bookRepository.deleteById(id);
+    }
+
+    public Book updatePage(Long bookId, int newPage) {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new RuntimeException("Book not found with id " + bookId));
+        book.setCurrentPage(newPage);
+        return bookRepository.save(book);
+    }
+
+    public Book updateRating(Long bookId, int rating) {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new RuntimeException("Book not found with id " + bookId));
+        book.setRating(rating);
+        return bookRepository.save(book);
     }
 }

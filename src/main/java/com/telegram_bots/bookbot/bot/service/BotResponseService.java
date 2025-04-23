@@ -5,6 +5,7 @@ import com.telegram_bots.bookbot.model.entities.Book;
 import com.telegram_bots.bookbot.model.entities.enums.BookStatus;
 import com.telegram_bots.bookbot.service.BookService;
 import com.telegram_bots.bookbot.service.LitresService;
+import com.telegram_bots.bookbot.utils.ButtonUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -14,7 +15,9 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -52,6 +55,27 @@ public class BotResponseService {
             userStateService.setWaitingForBookTitle(chatId, false);
             userStateService.saveSearchResults(chatId, books);
             return List.of(messageService.buildBookSearchResults(chatId, books));
+        }
+
+        //TODO: отрефакторить
+        if (userStateService.isWaitingForPageInput(chatId)) {
+            userStateService.setWaitingForPageInput(chatId, false);
+            int page = Integer.parseInt(messageText);
+            Long bookId = userStateService.getBookIdForPageInput(chatId);
+            userStateService.setBookIdForPageInput(chatId, null); // очищаем
+            bookService.updatePage(bookId, page);
+            Optional<Book> optionalBook = bookService.getBookById(bookId);
+            return messageService.buildUpdatedPageMessage(chatId, page, optionalBook);
+        }
+
+        if (userStateService.isWaitingForRatingInput(chatId)) {
+            userStateService.setWaitingForRatingInput(chatId, false);
+            int rating = Integer.parseInt(messageText);
+            Long bookId = userStateService.getBookIdForRatingInput(chatId);
+            userStateService.setBookIdForRatingInput(chatId, null); // очищаем
+            bookService.updateRating(bookId, rating);
+            Optional<Book> optionalBook = bookService.getBookById(bookId);
+            return messageService.buildUpdatedRatingMessage(chatId, rating, optionalBook);
         }
 
         return List.of(messageService.buildUnknownCommandMessage(chatId));
@@ -99,21 +123,44 @@ public class BotResponseService {
                 userStateService.setBookStatusFilter(chatId, status);
                 return List.of(buildBookListMessage(chatId));
             }
+            case "manage_book" -> {
+                Optional<Book> optionalBook = bookService.getBookById(extractBookId(data));
+                return List.of(messageService.buildBookMenuMessage(chatId, optionalBook));
+            }
+            case "change_status" -> {
+                return handleChangeStatus(chatId, data);
+            }
+            case "update_page" -> {
+                userStateService.setWaitingForPageInput(chatId, true);
+                return List.of(messageService.buildRequestPageInputMessage(chatId));
+            }
+            case "rate_book" -> {
+                userStateService.setWaitingForRatingInput(chatId, false);
+                return List.of(messageService.buildRequestRatingInputMessage(chatId));
+            }
+            case "delete_book" -> {
+                return handleDeleteBook(chatId, data);
+            }
             default -> {
                 return List.of(messageService.buildUnknownCallbackMessage(chatId));
             }
         }
     }
 
+    public Long extractBookId(String data) {
+        return Long.parseLong(data.split(":")[1]);
+    }
+
+
     public DeleteMessage handleDeleteMessage(Update update) {
         Long chatId = update.getCallbackQuery().getMessage().getChatId();
         Integer messageId = update.getCallbackQuery().getMessage().getMessageId();
         String data = update.getCallbackQuery().getData();
-        List<String> commandToDelete = List.of( "cancel",
-                                                "add_book",
-                                                "books_prev_page",
-                                                "books_next_page",
-                                                "change_filter");
+        List<String> commandToDelete = List.of("cancel",
+                "add_book",
+                "books_prev_page",
+                "books_next_page",
+                "change_filter");
         if (data.contains("select_book") || commandToDelete.contains(data)) {
             return new DeleteMessage(chatId.toString(), messageId);
         }
@@ -221,6 +268,30 @@ public class BotResponseService {
                 .build();
     }
 
+    private List<SendMessage> handleChangeStatus(Long chatId, String data) {
+        Long bookId = extractBookId(data);
 
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = Arrays.stream(BookStatus.values())
+                .map(status -> List.of(
+                        ButtonUtils.createButton(status.getDisplayNameRu(), "set_status:" + bookId + ":" + status.name())
+                ))
+                .toList();
+
+        markup.setKeyboard(rows);
+
+        SendMessage message = new SendMessage();
+        message.setChatId(String.valueOf(chatId));
+        message.setText("Выбери новый статус книги:");
+        message.setReplyMarkup(markup);
+
+        return List.of(message);
+    }
+
+    private List<SendMessage> handleDeleteBook(Long chatId, String data) {
+        Long bookId = extractBookId(data);
+        bookService.deleteBook(bookId);
+        return List.of(messageService.buildDeletedBookMessage(chatId));
+    }
 }
 

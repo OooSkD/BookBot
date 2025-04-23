@@ -12,9 +12,17 @@ public class UserSession {
 
     private boolean waitingForBookTitle;
 
+    private boolean waitingForPageInput;
+
+    private boolean waitingForRatingInput;
+
     private List<LitresBookDto> searchResults = new ArrayList<>();
 
     private int currentPage = 0;
 
     private BookStatus bookStatusFilter = null;
+
+    private Long bookIdForPageInput;
+
+    private Long bookIdForRatingInput;
 }

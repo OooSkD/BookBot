@@ -68,4 +68,36 @@ public class UserStateService {
     public void resetUserState(Long chatId) {
         userSessions.remove(chatId);
     }
+
+    public void setWaitingForPageInput(Long chatId, boolean waiting) {
+        getSession(chatId).setWaitingForPageInput(waiting);
+    }
+
+    public boolean isWaitingForPageInput(Long chatId) {
+        return getSession(chatId).isWaitingForPageInput();
+    }
+
+    public void setWaitingForRatingInput(Long chatId, boolean waiting) {
+        getSession(chatId).setWaitingForRatingInput(waiting);
+    }
+
+    public boolean isWaitingForRatingInput(Long chatId) {
+        return getSession(chatId).isWaitingForRatingInput();
+    }
+
+    public void setBookIdForPageInput(Long chatId, Long bookId) {
+        getSession(chatId).setBookIdForPageInput(bookId);
+    }
+
+    public Long getBookIdForPageInput(Long chatId) {
+        return getSession(chatId).getBookIdForPageInput();
+    }
+
+    public void setBookIdForRatingInput(Long chatId, Long bookId) {
+        getSession(chatId).setBookIdForRatingInput(bookId);
+    }
+
+    public Long getBookIdForRatingInput(Long chatId) {
+        return getSession(chatId).getBookIdForRatingInput();
+    }
 }

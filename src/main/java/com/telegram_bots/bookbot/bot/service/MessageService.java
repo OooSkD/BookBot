@@ -22,6 +22,17 @@ public class MessageService {
         this.welcomeMessageProvider = welcomeMessageProvider;
     }
 
+    public SendMessage createSimpleMessage(Long chatId, String text) {
+        return createSimpleMessage(String.valueOf(chatId), text);
+    }
+
+    public SendMessage createSimpleMessage(String chatId, String text) {
+        return SendMessage.builder()
+                .chatId(chatId)
+                .text(text)
+                .build();
+    }
+
     public SendMessage buildWelcomeMessage(Long chatId) {
         return buildWelcomeMessage(String.valueOf(chatId));
     }
@@ -46,10 +57,7 @@ public class MessageService {
     }
 
     public SendMessage buildRequestBookTitleMessage(String chatId) {
-        return SendMessage.builder()
-                .chatId(chatId)
-                .text("Введите название книги или автора:")
-                .build();
+        return createSimpleMessage(chatId, "Введите название книги или автора:");
     }
 
 
@@ -117,10 +125,7 @@ public class MessageService {
     }
 
     public SendMessage buildUnknownCommandMessage(String chatId) {
-        return SendMessage.builder()
-                .chatId(chatId)
-                .text("Неизвестная команда. Попробуйте /start")
-                .build();
+        return createSimpleMessage(chatId, "Неизвестная команда. Попробуйте /start");
     }
 
     public SendMessage buildUnknownCallbackMessage(Long chatId) {
@@ -128,10 +133,7 @@ public class MessageService {
     }
 
     public SendMessage buildUnknownCallbackMessage(String chatId) {
-        return SendMessage.builder()
-                .chatId(chatId)
-                .text("Неизвестное действие. Попробуйте снова.")
-                .build();
+        return createSimpleMessage(chatId, "Неизвестное действие. Попробуйте снова.");
     }
 
     public SendMessage buildBookAddedMessage(Long chatId, String title) {
@@ -139,10 +141,7 @@ public class MessageService {
     }
 
     public SendMessage buildBookAddedMessage(String chatId, String title) {
-        return SendMessage.builder()
-                .chatId(chatId)
-                .text("Книга \"" + title + "\" добавлена 📚")
-                .build();
+        return createSimpleMessage(chatId, "Книга \"" + title + "\" добавлена 📚");
     }
 
     public SendMessage buildBookNotFoundByIndexMessage(Long chatId) {
@@ -150,10 +149,7 @@ public class MessageService {
     }
 
     public SendMessage buildBookNotFoundByIndexMessage(String chatId) {
-        return SendMessage.builder()
-                .chatId(chatId)
-                .text("Не удалось найти книгу по выбранному индексу.")
-                .build();
+        return createSimpleMessage(chatId, "Не удалось найти книгу по выбранному индексу.");
     }
 
     public String buildBooksText(List<Book> books, BookStatus filter) {
@@ -203,5 +199,69 @@ public class MessageService {
         rows.add(List.of(ButtonUtils.createButton("📂 Изменить фильтр", "change_filter")));
         rows.add(List.of(ButtonUtils.createButton("➕ Добавить книгу", "add_book")));
         return rows;
+    }
+
+    public SendMessage buildBookMenuMessage(Long chatId, Optional<Book> optionalBook) {
+        return buildBookMenuMessage(String.valueOf(chatId), optionalBook);
+    }
+
+    public SendMessage buildBookMenuMessage(String chatId, Optional<Book> optionalBook) {
+        if (optionalBook.isEmpty()) {
+            return createSimpleMessage(chatId, "Книга не найдена..");
+        }
+        return buildBookMenuMessage(chatId, optionalBook.get());
+    }
+
+    public SendMessage buildBookMenuMessage(String chatId, Book book) {
+        String text = "📖 *" + book.getTitle() + "*\n" +
+                "✍️ Автор: " + book.getAuthor() + "\n" +
+                "📊 Статус: " + book.getStatus().getDisplayNameRu() + "\n" +
+                "📈 Страница: " + (book.getCurrentPage() == null ? 0 : book.getCurrentPage()) + "\n";
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        rows.add(List.of(ButtonUtils.createButton("📊 Изменить статус", "change_status:" + book.getId())));
+        rows.add(List.of(ButtonUtils.createButton("📈 Обновить страницу", "update_page:" + book.getId())));
+        rows.add(List.of(ButtonUtils.createButton("⭐️ Поставить оценку", "rate_book:" + book.getId())));
+        rows.add(List.of(ButtonUtils.createButton("🗑 Удалить", "delete_book:" + book.getId())));
+        rows.add(List.of(ButtonUtils.createButton("⬅️ Назад", "show_books")));
+
+        markup.setKeyboard(rows);
+
+        SendMessage message = new SendMessage();
+        message.setChatId(chatId);
+        message.setText(text);
+        message.setReplyMarkup(markup);
+        message.setParseMode("Markdown");
+
+        return message;
+    }
+
+    public SendMessage buildRequestPageInputMessage(Long chatId) {
+        return buildRequestPageInputMessage(String.valueOf(chatId));
+    }
+
+    public SendMessage buildRequestPageInputMessage(String chatId) {
+        return createSimpleMessage(chatId, "Введи новую текущую страницу:");
+    }
+
+    public SendMessage buildRequestRatingInputMessage(Long chatId) {
+        return createSimpleMessage(chatId, "Поставь оценку от 1 до 10:");
+    }
+    public SendMessage buildDeletedBookMessage(Long chatId) {
+        return createSimpleMessage(chatId, "Книга удалена.");
+    }
+
+    public List<SendMessage> buildUpdatedPageMessage(Long chatId, int page, Optional<Book> book) {
+        SendMessage updateMessage = createSimpleMessage(chatId, "Текущая страница обновлена: " + page);
+        SendMessage menuMessage = buildBookMenuMessage(chatId, book);
+        return List.of(updateMessage, menuMessage);
+    }
+
+    public List<SendMessage> buildUpdatedRatingMessage(Long chatId, int rating, Optional<Book> book) {
+        SendMessage updateMessage = createSimpleMessage(chatId, "Оценка обновлена: " + rating + " ⭐️");
+        SendMessage menuMessage = buildBookMenuMessage(chatId, book);
+        return List.of(updateMessage, menuMessage);
     }
 }
