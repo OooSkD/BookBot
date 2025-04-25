@@ -3,6 +3,7 @@ package com.telegram_bots.bookbot.bot.service;
 import com.telegram_bots.bookbot.model.dto.LitresBookDto;
 import com.telegram_bots.bookbot.model.entities.enums.BookStatus;
 import com.telegram_bots.bookbot.model.session.UserSession;
+import com.telegram_bots.bookbot.model.session.enums.UserState;
 import org.springframework.stereotype.Service;
 
 
@@ -19,14 +20,6 @@ public class UserStateService {
 
     private UserSession getSession(Long userId) {
         return userSessions.computeIfAbsent(userId, id -> new UserSession());
-    }
-
-    public void setWaitingForBookTitle(Long userId, boolean isWaiting) {
-        getSession(userId).setWaitingForBookTitle(isWaiting);
-    }
-
-    public boolean isWaitingForBookTitle(Long userId) {
-        return getSession(userId).isWaitingForBookTitle();
     }
 
     public void saveSearchResults(Long userId, List<LitresBookDto> results) {
@@ -65,39 +58,19 @@ public class UserStateService {
         getSession(chatId).setBookStatusFilter(status);
     }
 
-    public void resetUserState(Long chatId) {
-        userSessions.remove(chatId);
+    public UserState getState(Long chatId) {
+        return getSession(chatId).getState();
+    }
+    public void setState(Long chatId, UserState state) {
+        getSession(chatId).setState(state);
     }
 
-    public void setWaitingForPageInput(Long chatId, boolean waiting) {
-        getSession(chatId).setWaitingForPageInput(waiting);
+    public void setBookIdForChange(Long chatId, Long bookId) {
+        getSession(chatId).setBookIdForChange(bookId);
     }
 
-    public boolean isWaitingForPageInput(Long chatId) {
-        return getSession(chatId).isWaitingForPageInput();
+    public Long getBookIdForChange(Long chatId) {
+        return getSession(chatId).getBookIdForChange();
     }
 
-    public void setWaitingForRatingInput(Long chatId, boolean waiting) {
-        getSession(chatId).setWaitingForRatingInput(waiting);
-    }
-
-    public boolean isWaitingForRatingInput(Long chatId) {
-        return getSession(chatId).isWaitingForRatingInput();
-    }
-
-    public void setBookIdForPageInput(Long chatId, Long bookId) {
-        getSession(chatId).setBookIdForPageInput(bookId);
-    }
-
-    public Long getBookIdForPageInput(Long chatId) {
-        return getSession(chatId).getBookIdForPageInput();
-    }
-
-    public void setBookIdForRatingInput(Long chatId, Long bookId) {
-        getSession(chatId).setBookIdForRatingInput(bookId);
-    }
-
-    public Long getBookIdForRatingInput(Long chatId) {
-        return getSession(chatId).getBookIdForRatingInput();
-    }
 }

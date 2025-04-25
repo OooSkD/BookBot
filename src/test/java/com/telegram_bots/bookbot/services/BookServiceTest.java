@@ -65,7 +65,7 @@ class BookServiceTest {
         book.setId(1L);
         Mockito.when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
 
-        Optional<Book> result = bookService.getBookById(1L);
+        Optional<Book> result = bookService.getBookOptionalById(1L);
 
         Assertions.assertTrue(result.isPresent());
         Assertions.assertEquals(1L, result.get().getId());

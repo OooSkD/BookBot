@@ -38,8 +38,13 @@ public class BookService {
         return new ArrayList<>();
     }
 
-    public Optional<Book> getBookById(Long id) {
+    public Optional<Book> getBookOptionalById(Long id) {
         return bookRepository.findById(id);
+    }
+
+    public Book getBookById(Long bookId) {
+        return bookRepository.findById(bookId)
+                .orElseThrow(() -> new RuntimeException("Book not found with id " + bookId));
     }
 
     public Book addBook(Book book) {
@@ -96,17 +101,18 @@ public class BookService {
         bookRepository.deleteById(id);
     }
 
-    public Book updatePage(Long bookId, int newPage) {
-        Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new RuntimeException("Book not found with id " + bookId));
+    public Book updatePage(Book book, int newPage) {
         book.setCurrentPage(newPage);
         return bookRepository.save(book);
     }
 
-    public Book updateRating(Long bookId, int rating) {
-        Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new RuntimeException("Book not found with id " + bookId));
+    public Book updateRating(Book book, int rating) {
         book.setRating(rating);
+        return bookRepository.save(book);
+    }
+
+    public Book updateStatus(Book book, BookStatus status) {
+        book.setStatus(status);
         return bookRepository.save(book);
     }
 }

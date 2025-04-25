@@ -205,6 +205,10 @@ public class MessageService {
         return buildBookMenuMessage(String.valueOf(chatId), optionalBook);
     }
 
+    public SendMessage buildBookMenuMessage(Long chatId, Book optionalBook) {
+        return buildBookMenuMessage(String.valueOf(chatId), optionalBook);
+    }
+
     public SendMessage buildBookMenuMessage(String chatId, Optional<Book> optionalBook) {
         if (optionalBook.isEmpty()) {
             return createSimpleMessage(chatId, "Книга не найдена..");
@@ -216,7 +220,8 @@ public class MessageService {
         String text = "📖 *" + book.getTitle() + "*\n" +
                 "✍️ Автор: " + book.getAuthor() + "\n" +
                 "📊 Статус: " + book.getStatus().getDisplayNameRu() + "\n" +
-                "📈 Страница: " + (book.getCurrentPage() == null ? 0 : book.getCurrentPage()) + "\n";
+                "📈 Страница: " + (book.getCurrentPage() == null ? 0 : book.getCurrentPage()) + "\n" +
+                "⭐️ Оценка: " + (book.getRating() == null ? 0 : book.getRating()) + "\n";
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
@@ -253,14 +258,20 @@ public class MessageService {
         return createSimpleMessage(chatId, "Книга удалена.");
     }
 
-    public List<SendMessage> buildUpdatedPageMessage(Long chatId, int page, Optional<Book> book) {
+    public List<SendMessage> buildUpdatedPageMessage(Long chatId, int page, Book book) {
         SendMessage updateMessage = createSimpleMessage(chatId, "Текущая страница обновлена: " + page);
         SendMessage menuMessage = buildBookMenuMessage(chatId, book);
         return List.of(updateMessage, menuMessage);
     }
 
-    public List<SendMessage> buildUpdatedRatingMessage(Long chatId, int rating, Optional<Book> book) {
+    public List<SendMessage> buildUpdatedRatingMessage(Long chatId, int rating, Book book) {
         SendMessage updateMessage = createSimpleMessage(chatId, "Оценка обновлена: " + rating + " ⭐️");
+        SendMessage menuMessage = buildBookMenuMessage(chatId, book);
+        return List.of(updateMessage, menuMessage);
+    }
+
+    public List<SendMessage> buildUpdatedStatusMessage(Long chatId, BookStatus status, Book book) {
+        SendMessage updateMessage = createSimpleMessage(chatId, "Статус обновлен на: " + status.getDisplayNameRu());
         SendMessage menuMessage = buildBookMenuMessage(chatId, book);
         return List.of(updateMessage, menuMessage);
     }
