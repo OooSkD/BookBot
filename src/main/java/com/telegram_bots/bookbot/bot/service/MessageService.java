@@ -255,7 +255,7 @@ public class MessageService {
         return createSimpleMessage(chatId, "Поставь оценку от 1 до 10:");
     }
     public SendMessage buildDeletedBookMessage(Long chatId) {
-        return createSimpleMessage(chatId, "Книга удалена.");
+        return createSimpleMessage(chatId, "📖 Книжка тихонько покинула полочку и освободила место для новых историй");
     }
 
     public List<SendMessage> buildUpdatedPageMessage(Long chatId, int page, Book book) {
@@ -272,6 +272,12 @@ public class MessageService {
 
     public List<SendMessage> buildUpdatedStatusMessage(Long chatId, BookStatus status, Book book) {
         SendMessage updateMessage = createSimpleMessage(chatId, "Статус обновлен на: " + status.getDisplayNameRu());
+        SendMessage menuMessage = buildBookMenuMessage(chatId, book);
+        return List.of(updateMessage, menuMessage);
+    }
+
+    public List<SendMessage> buildCancelledUpdateMessage(Long chatId, Book book) {
+        SendMessage updateMessage = createSimpleMessage(chatId, "📚 Отмена прошла успешно! Книга осталась в твоем уютном списке");
         SendMessage menuMessage = buildBookMenuMessage(chatId, book);
         return List.of(updateMessage, menuMessage);
     }

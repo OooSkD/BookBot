@@ -113,6 +113,11 @@ public class BookService {
 
     public Book updateStatus(Book book, BookStatus status) {
         book.setStatus(status);
+        if (status == BookStatus.READING && book.getStartDate() == null) {
+            book.setStartDate(LocalDate.now());
+        } else if (status == BookStatus.READ && book.getFinishDate() == null) {
+            book.setFinishDate(LocalDate.now());
+        }
         return bookRepository.save(book);
     }
 }

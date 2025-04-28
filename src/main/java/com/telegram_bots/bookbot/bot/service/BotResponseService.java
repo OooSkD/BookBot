@@ -77,19 +77,47 @@ public class BotResponseService {
     }
 
     private List<SendMessage> handlePageInput(Long chatId, String messageText) {
+        if (!isValidPageInput(messageText)) {
+            return List.of(messageService.createSimpleMessage(chatId,
+                    "Похоже, что-то пошло не так 😔 Пожалуйста, отправьте номер страницы числом"));
+        }
         Book book = getBookAndClearState(chatId);
         int page = Integer.parseInt(messageText);
+        if (book.getCurrentPage() == null && book.getStatus() == BookStatus.PLANNED) {
+            book.setStatus(BookStatus.READING);
+        }
         bookService.updatePage(book, page);
-
         return messageService.buildUpdatedPageMessage(chatId, page, book);
     }
 
+    private boolean isValidPageInput(String input) {
+        try {
+            int page = Integer.parseInt(input);
+            return page > 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
     private List<SendMessage> handleRatingInput(Long chatId, String messageText) {
+        if (!isValidRatingInput(messageText)) {
+            return List.of(messageService.createSimpleMessage(chatId,
+                    "Упс! Оценка должна быть числом от 1 до 10 🌟 Попробуйте ещё раз."));
+        }
         Book book = getBookAndClearState(chatId);
         int rating = Integer.parseInt(messageText);
         bookService.updateRating(book, rating);
 
         return messageService.buildUpdatedRatingMessage(chatId, rating, book);
+    }
+
+    private boolean isValidRatingInput(String input) {
+        try {
+            int rating = Integer.parseInt(input);
+            return rating >= 1 && rating <= 10;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
     public List<SendMessage> handleCallbackQuery(Update update) {
@@ -159,6 +187,10 @@ public class BotResponseService {
             case "set_status" -> {
                 return handleSetStatusCallback(chatId, data);
             }
+            case "cancel_update_book" -> {
+                userStateService.setState(chatId, UserState.NONE);
+                return handleCancelUpdateBook(chatId);
+            }
             default -> {
                 return List.of(messageService.buildUnknownCallbackMessage(chatId));
             }
@@ -178,8 +210,11 @@ public class BotResponseService {
                 "add_book",
                 "books_prev_page",
                 "books_next_page",
-                "change_filter");
-        if (data.contains("select_book") || commandToDelete.contains(data)) {
+                "change_filter",
+                "delete_book",
+                "select_book");
+        boolean needDeletePreviousMessage = commandToDelete.stream().anyMatch(data::startsWith);
+        if (needDeletePreviousMessage) {
             return new DeleteMessage(chatId.toString(), messageId);
         }
 
@@ -329,6 +364,14 @@ public class BotResponseService {
         bookService.updateStatus(book, status);
 
         return messageService.buildUpdatedStatusMessage(chatId, status, book);
+    }
+
+    private List<SendMessage> handleCancelUpdateBook(Long chatId) {
+        Long bookId = userStateService.getBookIdForChange(chatId);
+        if (bookId == null) {
+            return List.of(messageService.createSimpleMessage(chatId, "Книга не выбрана для изменения статуса"));
+        }
+        return messageService.buildCancelledUpdateMessage(chatId, bookService.getBookById(bookId));
     }
 }
 

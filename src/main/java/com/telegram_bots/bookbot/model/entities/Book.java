@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
@@ -38,5 +39,6 @@ public class Book {
     private Integer currentPage; // Номер страницы, на которой остановился пользователь
 
     @Column(name = "modified_at")
+    @UpdateTimestamp
     private Timestamp modifiedAt; // Дата, когда информация по книге была обновлена
 }
