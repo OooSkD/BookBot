@@ -57,7 +57,7 @@ public class BotResponseService {
         };
     }
 
-    private List<SendMessage> handleBookTitle(Long chatId, String title) {
+    List<SendMessage> handleBookTitle(Long chatId, String title) {
         List<LitresBookDto> books = litresService.searchBooks(title)
                 .stream().limit(maxCountBooks).toList();
 
@@ -76,7 +76,7 @@ public class BotResponseService {
         return bookService.getBookById(bookId);
     }
 
-    private List<SendMessage> handlePageInput(Long chatId, String messageText) {
+    public List<SendMessage> handlePageInput(Long chatId, String messageText) {
         if (!isValidPageInput(messageText)) {
             return List.of(messageService.createSimpleMessage(chatId,
                     "Похоже, что-то пошло не так 😔 Пожалуйста, отправьте номер страницы числом"));
@@ -90,7 +90,7 @@ public class BotResponseService {
         return messageService.buildUpdatedPageMessage(chatId, page, book);
     }
 
-    private boolean isValidPageInput(String input) {
+    boolean isValidPageInput(String input) {
         try {
             int page = Integer.parseInt(input);
             return page > 0;
@@ -99,7 +99,7 @@ public class BotResponseService {
         }
     }
 
-    private List<SendMessage> handleRatingInput(Long chatId, String messageText) {
+    public List<SendMessage> handleRatingInput(Long chatId, String messageText) {
         if (!isValidRatingInput(messageText)) {
             return List.of(messageService.createSimpleMessage(chatId,
                     "Упс! Оценка должна быть числом от 1 до 10 🌟 Попробуйте ещё раз."));
@@ -221,7 +221,7 @@ public class BotResponseService {
         return null;
     }
 
-    private List<SendMessage> handleBookSelection(Long chatId, String data) {
+    List<SendMessage> handleBookSelection(Long chatId, String data) {
         int index = Integer.parseInt(data.substring("select_book:".length()));
         List<LitresBookDto> books = userStateService.getSearchResults(chatId);
 
@@ -282,7 +282,7 @@ public class BotResponseService {
                 .build();
     }
 
-    private SendMessage buildStatusFilterButtons(Long chatId) {
+    SendMessage buildStatusFilterButtons(Long chatId) {
         String text = "Выберите статус для фильтрации 📖";
 
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
@@ -304,12 +304,10 @@ public class BotResponseService {
             rows.add(currentRow);
         }
 
-        // Кнопка "Показать все"
         InlineKeyboardButton clearFilter = new InlineKeyboardButton("📋 Показать все");
         clearFilter.setCallbackData("filter_status_clear");
         rows.add(List.of(clearFilter));
 
-        // Кнопка "Назад"
         InlineKeyboardButton back = new InlineKeyboardButton("🔙 Назад");
         back.setCallbackData("show_books");
         rows.add(List.of(back));
@@ -321,7 +319,7 @@ public class BotResponseService {
                 .build();
     }
 
-    private List<SendMessage> handleChangeStatus(Long chatId) {
+     List<SendMessage> handleChangeStatus(Long chatId) {
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows = Arrays.stream(BookStatus.values())
                 .map(status -> List.of(
@@ -345,7 +343,7 @@ public class BotResponseService {
         return List.of(messageService.buildDeletedBookMessage(chatId));
     }
 
-    private List<SendMessage> handleSetStatusCallback(Long chatId, String data) {
+    List<SendMessage> handleSetStatusCallback(Long chatId, String data) {
         String statusStr = data.replace("set_status:", "").trim();
 
         BookStatus status;
@@ -366,7 +364,7 @@ public class BotResponseService {
         return messageService.buildUpdatedStatusMessage(chatId, status, book);
     }
 
-    private List<SendMessage> handleCancelUpdateBook(Long chatId) {
+    List<SendMessage> handleCancelUpdateBook(Long chatId) {
         Long bookId = userStateService.getBookIdForChange(chatId);
         if (bookId == null) {
             return List.of(messageService.createSimpleMessage(chatId, "Книга не выбрана для изменения статуса"));

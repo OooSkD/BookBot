@@ -41,4 +41,10 @@ public class Book {
     @Column(name = "modified_at")
     @UpdateTimestamp
     private Timestamp modifiedAt; // Дата, когда информация по книге была обновлена
+
+    public Book(String title, String author, BookStatus status) {
+        this.title = title;
+        this.author = author;
+        this.status = status;
+    }
 }

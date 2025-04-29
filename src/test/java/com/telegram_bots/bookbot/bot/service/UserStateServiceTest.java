@@ -1,6 +1,7 @@
 package com.telegram_bots.bookbot.bot.service;
 
 import com.telegram_bots.bookbot.model.dto.LitresBookDto;
+import com.telegram_bots.bookbot.model.session.enums.UserState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -20,13 +21,13 @@ public class UserStateServiceTest {
     void testSetAndCheckWaitingForBookTitle() {
         long chatId = 123L;
 
-        assertFalse(userStateService.isWaitingForBookTitle(chatId));
+        assertTrue(userStateService.getState(chatId) == UserState.NONE);
 
-        userStateService.setWaitingForBookTitle(chatId, true);
-        assertTrue(userStateService.isWaitingForBookTitle(chatId));
+        userStateService.setState(chatId, UserState.WAITING_FOR_TITLE);
+        assertTrue(userStateService.getState(chatId) == UserState.WAITING_FOR_TITLE);
 
-        userStateService.setWaitingForBookTitle(chatId, false);
-        assertFalse(userStateService.isWaitingForBookTitle(chatId));
+        userStateService.setState(chatId, UserState.WAITING_FOR_RATING);
+        assertTrue(userStateService.getState(chatId) == UserState.WAITING_FOR_RATING);
     }
 
     @Test
