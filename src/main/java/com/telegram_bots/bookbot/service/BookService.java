@@ -1,5 +1,6 @@
 package com.telegram_bots.bookbot.service;
 
+import com.telegram_bots.bookbot.model.dto.Statistics;
 import com.telegram_bots.bookbot.model.entities.Book;
 import com.telegram_bots.bookbot.model.entities.User;
 import com.telegram_bots.bookbot.model.entities.enums.BookStatus;
@@ -9,9 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.time.YearMonth;
+import java.util.*;
 
 @Service
 public class BookService {
@@ -119,5 +119,55 @@ public class BookService {
             book.setFinishDate(LocalDate.now());
         }
         return bookRepository.save(book);
+    }
+
+    public Statistics getStatisticsForUser(Long userId) {
+        List<Book> books = getAllBooksOfUser(userId);
+
+        LocalDate today = LocalDate.now();
+        YearMonth thisMonth = YearMonth.now();
+        int thisYear = today.getYear();
+
+        int todayBooks = 0;
+        int todayPages = 0;
+        int monthBooks = 0;
+        int monthPages = 0;
+        int yearBooks = 0;
+        int yearPages = 0;
+
+        Book biggestBook = null;
+
+        for (Book book : books) {
+            LocalDate finished = book.getFinishDate();
+            if (finished == null) {
+                continue;
+            }
+            int pages = book.getCurrentPage();
+
+            if (finished.isEqual(today)) {
+                todayBooks++;
+                todayPages += pages;
+            }
+            if (YearMonth.from(finished).equals(thisMonth)) {
+                monthBooks++;
+                monthPages += pages;
+            }
+            if (finished.getYear() == thisYear) {
+                yearBooks++;
+                yearPages += pages;
+            }
+
+            if (biggestBook == null || pages > biggestBook.getCurrentPage()) {
+                biggestBook = book;
+            }
+        }
+
+        return new Statistics(
+                todayBooks, todayPages,
+                monthBooks, monthPages,
+                yearBooks, yearPages,
+                biggestBook != null ? biggestBook.getTitle() : "-",
+                biggestBook != null ? biggestBook.getCurrentPage() : 0
+        );
     }
 }

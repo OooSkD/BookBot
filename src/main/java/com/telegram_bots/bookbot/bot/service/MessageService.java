@@ -42,6 +42,7 @@ public class MessageService {
         List<InlineKeyboardButton> row = new ArrayList<>();
         row.add(ButtonUtils.createButton("Посмотреть мои книги", "show_books"));
         row.add(ButtonUtils.createButton("Добавить книгу", "add_book"));
+        row.add(ButtonUtils.createButton("Статистика", "show_stats"));
         markup.setKeyboard(List.of(row));
 
         return SendMessage.builder()

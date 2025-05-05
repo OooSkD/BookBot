@@ -1,6 +1,7 @@
 package com.telegram_bots.bookbot.bot.service;
 
 import com.telegram_bots.bookbot.model.dto.LitresBookDto;
+import com.telegram_bots.bookbot.model.dto.Statistics;
 import com.telegram_bots.bookbot.model.entities.Book;
 import com.telegram_bots.bookbot.model.entities.enums.BookStatus;
 import com.telegram_bots.bookbot.model.session.enums.UserState;
@@ -191,6 +192,9 @@ public class BotResponseService {
                 userStateService.setState(chatId, UserState.NONE);
                 return handleCancelUpdateBook(chatId);
             }
+            case "show_stats" -> {
+                return List.of(buildStatisticsMessage(chatId));
+            }
             default -> {
                 return List.of(messageService.buildUnknownCallbackMessage(chatId));
             }
@@ -370,6 +374,34 @@ public class BotResponseService {
             return List.of(messageService.createSimpleMessage(chatId, "Книга не выбрана для изменения статуса"));
         }
         return messageService.buildCancelledUpdateMessage(chatId, bookService.getBookById(bookId));
+    }
+
+    public SendMessage buildStatisticsMessage(Long chatId) {
+        Statistics stats = bookService.getStatisticsForUser(chatId);
+
+        String text = "📚 *Ваша статистика чтения*\n\n" +
+                "🌤 *Сегодня*\n" +
+                "— 📖 Книг прочитано: " + stats.todayBooks() + "\n" +
+                "— 📄 Страниц пролистано: " + stats.todayPages() + "\n\n" +
+                "🌷 *Этот месяц*\n" +
+                "— 📚 Книг завершено: " + stats.monthBooks() + "\n" +
+                "— 📃 Страниц прочитано: " + stats.monthPages() + "\n\n" +
+                "🌟 *Этот год*\n" +
+                "— 📘 Книг покорено: " + stats.yearBooks() + "\n" +
+                "— 📜 Страниц проглочено: " + stats.yearPages() + "\n\n" +
+                "🏆 *Самая большая книга*\n" +
+                "«" + stats.biggestBookTitle() + "» — " + stats.biggestBookPages() + " стр.\n\n" +
+                "💬 _Каждая страница — шаг к новым мирам. Так держать!_ ✨";
+
+        InlineKeyboardButton backButton = ButtonUtils.createButton("⬅ Назад", "show_books");
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup(List.of(List.of(backButton)));
+
+        return SendMessage.builder()
+                .chatId(String.valueOf(chatId))
+                .text(text)
+                .replyMarkup(markup)
+                .parseMode("Markdown")
+                .build();
     }
 }
 
