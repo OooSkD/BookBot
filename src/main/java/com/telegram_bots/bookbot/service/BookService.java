@@ -52,7 +52,10 @@ public class BookService {
     }
 
     public Book addBook(Long telegramId, String title, String author) {
-        // 1. Получаем пользователя по Telegram ID
+        return addBook(telegramId, title, author, 0);
+    }
+
+    public Book addBook(Long telegramId, String title, String author, Integer totalPages) {
         Optional<User> optionalUser = userRepository.findByTelegramId(telegramId);
         User user;
 
@@ -60,22 +63,21 @@ public class BookService {
             user = optionalUser.get();
             Optional<Book> existingBook = bookRepository.findByTitleAndUser(title, user);
             if (existingBook.isPresent()) {
-                return null; // книга уже есть — ничего не сохраняем
+                return null;
             }
         } else {
-            // 2. Создаем нового пользователя
             user = new User();
             user.setTelegramId(telegramId);
             userRepository.save(user);
         }
 
-        // 4. Создаем и сохраняем новую книгу
         Book book = new Book();
         book.setTitle(title);
         book.setAuthor(author);
         book.setUser(user);
         book.setStatus(BookStatus.PLANNED);
         book.setAddedDate(LocalDate.now());
+        book.setTotalPages(totalPages);
 
         return bookRepository.save(book);
     }
@@ -85,7 +87,6 @@ public class BookService {
         Book existingBook = bookRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Book not found with id " + id));
 
-        // Обновляем поля книги
         existingBook.setTitle(book.getTitle());
         existingBook.setAuthor(book.getAuthor());
         existingBook.setStatus(book.getStatus());
@@ -93,7 +94,6 @@ public class BookService {
         existingBook.setRating(book.getRating());
         existingBook.setCurrentPage(book.getCurrentPage());
 
-        // Сохраняем обновлённую книгу в базе данных
         return bookRepository.save(existingBook);
     }
 
@@ -142,7 +142,7 @@ public class BookService {
             if (finished == null) {
                 continue;
             }
-            int pages = book.getCurrentPage();
+            int pages = safeInt(book.getCurrentPage());
 
             if (finished.isEqual(today)) {
                 todayBooks++;
@@ -157,7 +157,7 @@ public class BookService {
                 yearPages += pages;
             }
 
-            if (biggestBook == null || pages > biggestBook.getCurrentPage()) {
+            if (biggestBook == null || pages > safeInt(biggestBook.getCurrentPage())) {
                 biggestBook = book;
             }
         }
@@ -167,7 +167,11 @@ public class BookService {
                 monthBooks, monthPages,
                 yearBooks, yearPages,
                 biggestBook != null ? biggestBook.getTitle() : "-",
-                biggestBook != null ? biggestBook.getCurrentPage() : 0
+                biggestBook != null ? safeInt(biggestBook.getCurrentPage()) : 0
         );
+    }
+
+    public static int safeInt(Integer value) {
+        return value == null ? 0 : value;
     }
 }

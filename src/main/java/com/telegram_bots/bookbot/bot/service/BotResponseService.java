@@ -234,7 +234,7 @@ public class BotResponseService {
         }
 
         LitresBookDto selectedBook = books.get(index);
-        bookService.addBook(chatId, selectedBook.getTitle(), selectedBook.getAuthor());
+        bookService.addBook(chatId, selectedBook.getTitle(), selectedBook.getAuthor(), selectedBook.getTotalPages());
         userStateService.clearSearchResults(chatId);
 
         SendMessage addedMessage = messageService.buildBookAddedMessage(chatId, selectedBook.getTitle());
